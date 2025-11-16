@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+
+       <title>CashApp</title> <!-- UPDATED: Set title for PWA -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- PWA & Mobile Configuration -->
+    <link rel="manifest" href="manifest.json">
+    <!-- iOS PWA Meta Tags (Crucial for full-screen on iPhone) -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="Cash-App-Logo-PNG-File.png">
+    <meta name="theme-color" content="#00D54B">
+
+    <style>
+        /* Global Styles */
+        body {
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            /* Use 100% height to be a better target for mobile device heights */
+            min-height: 100vh; 
+            background-color: #f5f5f5; /* Light grey outside the app frame */
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        /* App Container (Full Screen for Mobile - FIX for iPhone Pro Max) */
+        .app-container {
+            width: 100%; /* MODIFIED: Full width for mobile fit */
+            height: 100vh; /* MODIFIED: Full height for mobile fit */
+            background-color: #00D54B; /* Bright Cash App Green */
+            color: white;
+            display: flex;
+            flex-direction: column;
+            
+            /* MODIFIED: Removed to achieve true full-screen app feel */
+            box-shadow: none; 
+            border-radius: 0; 
+            overflow: hidden;
+            
+            /* CRITICAL: Dynamic padding for iOS and Android Safe Areas (Notch, Home Indicator) */
+            padding-top: max(20px, env(safe-area-inset-top));
+            padding-bottom: max(20px, env(safe-area-inset-bottom));
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+
+            box-sizing: border-box;
+            /* Animation CSS has been removed */
+        }
+
+        /* Header Navigation */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px 20px 20px;
+        }
+
+        .header-icon {
+            font-size: 24px;
+            font-weight: 600;
+        }
+
+        .profile-pic {
+            width: 30px;
+            height: 30px;
+            background-color: white;
+            border-radius: 50%;
+            border: 2px solid white;
+            /* Placeholder for profile image */
+            background-image: url('https://placehold.co/30x30/222222/white?text=P');
+            background-size: cover;
+        }
+
+        /* Amount Display */
+        .amount-container {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            /* Added padding to prevent text from touching screen edges when scaled */
+            padding: 0 10px; 
+        }
+
+        #amount-display {
+            font-size: 7rem; /* MODIFIED: Reduced from 8rem for better general fit */
+            font-weight: 600;
+            margin: 0;
+            line-height: 1;
+            transition: font-size 0.2s; /* Smooth transition when size changes */
+            max-width: 100%; 
+            overflow: hidden; 
+        }
+
+        /* Dynamic Font Scaling for Large Amounts (Optimized for fit) */
+        .small-text-4 {
+            font-size: 6rem !important; /* MODIFIED: Reduced from 6.5rem */
+        }
+        .small-text-5 {
+            font-size: 5rem !important; /* MODIFIED: Reduced from 5.5rem */
+        }
+        .small-text-6 {
+            font-size: 4rem !important; /* MODIFIED: Reduced from 4.5rem */
+        }
+
+        /* Keypad */
+        .keypad {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px 0;
+            /* Reverted padding to make space for the buttons */
+            padding: 30px 20px 50px 20px; 
+        }
+
+        .keypad button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 28px;
+            font-weight: 400;
+            padding: 15px 0;
+            cursor: pointer;
+            transition: background-color 0.1s;
+        }
+
+        .keypad button:active {
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+        }
+
+        .keypad .backspace-icon {
+            font-size: 24px;
+            padding-bottom: 25px; /* Visual adjustment */
+        }
+
+        /* Action Buttons (Restored to simple, "old" aesthetic) */
+        .action-buttons {
+            display: flex;
+            justify-content: space-between;
+            padding: 0 20px 20px 20px;
+            gap: 15px;
+        }
+
+        .action-buttons button {
+            flex: 1;
+            padding: 15px 0;
+            border-radius: 30px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            transition: opacity 0.2s;
+            box-shadow: none; /* Ensure no shadows */
+            text-transform: none; /* Ensure no uppercase */
+            letter-spacing: normal;
+        }
+
+        .action-buttons button:active {
+            opacity: 0.8;
+        }
+
+        .request-btn {
+            background-color: rgba(255, 255, 255, 0.3); /* Translucent white */
+            color: white;
+        }
+
+        .pay-btn {
+            background-color: white;
+            color: #00D54B; /* Green text on white button */
+        }
+
+        /* Footer Navigation */
+        .footer {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            height: 60px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .footer span {
+            font-size: 14px;
+            font-weight: 600;
+            padding: 5px;
+        }
+
+        .footer .balance {
+            font-size: 16px;
+            font-weight: 700;
+            padding: 0 10px;
+        }
+        
+        /* Icon Sizing */
+        .icon-small {
+            font-size: 20px;
+        }
+        
+        /* Added class for the dollar image to match the size of the 24x24 icons */
+        .icon-dollar-img {
+            width: 24px;
+            height: 24px;
+            vertical-align: middle; /* Helps align the image with the baseline of other icons */
+        }
+
+        /* The separate media query for very small screens is no longer needed. */
+    </style>
+</head>
+<body>
+    <div class="app-container" id="app-container">
+        <div class="header">
+            <span class="header-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M4 4H10V10H4V4Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M14 4H20V10H14V4Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M4 14H10V20H4V14Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M14 14H16" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M18 14H20" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M14 18H16" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M18 18H20" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M14 20H16" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M18 20H20" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </span>
+            <div class="profile-pic"></div>
+        </div>
+
+        <div class="amount-container">
+            <h1 id="amount-display">$0</h1>
+        </div>
+
+        <div class="keypad">
+            <button data-value="1">1</button>
+            <button data-value="2">2</button>
+            <button data-value="3">3</button>
+            <button data-value="4">4</button>
+            <button data-value="5">5</button>
+            <button data-value="6">6</button>
+            <button data-value="7">7</button>
+            <button data-value="8">8</button>
+            <button data-value="9">9</button>
+            <button data-value="." class="dot">.</button>
+            <button data-value="0">0</button>
+            <button data-action="backspace" class="backspace-icon">&lt;</button>
+        </div>
+
+        <div class="action-buttons">
+            <button class="request-btn">Request</button>
+            <button class="pay-btn" id="pay-button-index">Pay</button>
+        </div>
+
+        <div class="footer">
+            <span class="balance">$33.8K</span>
+            <span class="icon-small">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect x="2" y="5" width="20" height="14" rx="3" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <line x1="2" y1="10" x2="22" y2="10" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <line x1="16" y1="14" x2="20" y2="14" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </span>
+            <span>
+                <img src="$ (1).png" alt="Dollar Sign Icon" class="icon-dollar-img">
+            </span>
+            <span class="icon-small">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="11" cy="11" r="8" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <line x1="16.5" y1="16.5" x2="21.5" y2="21.5" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </span>
+            <span class="icon-small">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <circle cx="12" cy="12" r="10" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <path d="M12 6V12L16 14" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </span>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const display = document.getElementById('amount-display');
+            const keypadButtons = document.querySelectorAll('.keypad button');
+            const payButton = document.getElementById('pay-button-index'); // Get the Pay button
+            let amountString = '0'; // Stores the input value without the dollar sign
+
+            // Function to update the display text and handle scaling
+            const updateDisplay = () => {
+                const parts = amountString.split('.');
+                const rawDollarDigits = parts[0]; // Raw digits entered (e.g., '50000' or '0')
+                
+                // Get the length of the digits *before* the decimal point.
+                const digitsLength = rawDollarDigits === '0' ? 0 : rawDollarDigits.length;
+
+                // Format the main dollars part with commas
+                const dollars = rawDollarDigits.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+                
+                // Construct the final display string
+                let displayValue = '$' + dollars;
+                if (parts.length > 1) {
+                    displayValue += '.' + parts[1];
+                }
+
+                // If input is empty, revert to $0
+                if (amountString === '' || amountString === '.') {
+                    display.textContent = '$0';
+                } else {
+                    display.textContent = displayValue;
+                }
+                
+                // === Dynamic Scaling Logic (Based on digits before decimal) ===
+                display.classList.remove('small-text-4', 'small-text-5', 'small-text-6'); 
+
+                if (digitsLength >= 6) { 
+                    display.classList.add('small-text-6'); // For $100,000+
+                } else if (digitsLength === 5) {
+                    display.classList.add('small-text-5'); // For $10,000+
+                } else if (digitsLength === 4) { 
+                    display.classList.add('small-text-4'); // For $1,000+
+                }
+                
+                // Disable the Pay button if the amount is $0
+                if (amountString === '0' || amountString === '' || amountString === '.') {
+                    payButton.disabled = true;
+                    payButton.style.opacity = '0.5';
+                } else {
+                    payButton.disabled = false;
+                    payButton.style.opacity = '1';
+                }
+            };
+
+            // Event listener for all keypad buttons
+            keypadButtons.forEach(button => {
+                button.addEventListener('click', () => {
+                    const value = button.dataset.value;
+                    const action = button.dataset.action;
+
+                    if (action === 'backspace') {
+                        // Handle Backspace
+                        if (amountString.length > 0) {
+                            amountString = amountString.slice(0, -1);
+                        }
+                    } else if (value) {
+                        // Handle Number/Dot Input
+                        
+                        // 1. Prevent multiple decimal points
+                        if (value === '.' && amountString.includes('.')) {
+                            return;
+                        }
+
+                        // 2. Limit to two decimal places
+                        if (amountString.includes('.')) {
+                            const decimalPart = amountString.split('.')[1];
+                            if (decimalPart && decimalPart.length >= 2) {
+                                return;
+                            }
+                        }
+
+                        // 3. Remove leading zero for numbers
+                        if (amountString === '0' && value !== '.') {
+                            amountString = value;
+                        } else {
+                            amountString += value;
+                        }
+                    }
+
+                    updateDisplay();
+                });
+            });
+            
+            // === MODIFIED: Event listener for the Pay button ===
+            payButton.addEventListener('click', () => {
+                // The disabled check is handled by the updateDisplay function and opacity style
+                if (!payButton.disabled) { 
+                    // 1. Save the amount to localStorage
+                    localStorage.setItem('cashAppAmount', display.textContent);
+                    
+                    // 2. Navigate directly to the sending.html page (Animation will start there)
+                    window.location.href = 'sending.html';
+                }
+            });
+
+
+            // Initial display setup
+            updateDisplay();
+        });
+    </script>
+</body>
+</html>

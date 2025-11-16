@@ -1,0 +1,22 @@
+{
+"name": "CashApp",
+"short_name": "CashApp",
+"description": "A mock financial transaction application.",
+"start_url": "/index.html",
+"display": "standalone",
+"orientation": "portrait",
+"theme_color": "#00D54B",
+"background_color": "#00D54B",
+"icons": [
+{
+"src": "Cash-App-Logo-PNG-File.png",
+"sizes": "192x192",
+"type": "image/png"
+},
+{
+"src": "Cash-App-Logo-PNG-File.png",
+"sizes": "512x512",
+"type": "image/png"
+}
+]
+}

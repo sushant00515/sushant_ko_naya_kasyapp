@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+     <title>CashApp</title> <!-- UPDATED: Set title for PWA -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- PWA & Mobile Configuration -->
+    <link rel="manifest" href="manifest.json">
+    <!-- iOS PWA Meta Tags (Crucial for full-screen on iPhone) -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="Cash-App-Logo-PNG-File.png">
+    <meta name="theme-color" content="#00D54B">
+
+  <style>
+    /* ------------------------------------------------------------------- */
+    /* --- ROOT VARIABLES (Gray Theme) --- */
+    /* ------------------------------------------------------------------- */
+    :root{
+      --app-bg: #f5f5f5; /* Light gray background */
+      --card: #ffffff;
+      --text: #121114;
+      --muted: #8b8892;
+      /* Gray Buttons - Unified */
+      --btn-add-bg: #e8e8e8; /* Light gray for 'Add money' and 'Withdraw' */
+      --btn-add-text: #555555; /* Dark gray for text/border */
+      
+      --border: #ece7fa;
+      --accent-green: #4ade80; 
+      --accent-gray: #777777; /* Neutral gray for primary accents (e.g., icons, paychecks icon) */
+      --radius: 24px;
+      --shadow:0 2px 8px rgba(0, 0, 0, 0.08), 0 0 0 1px rgba(0, 0, 0, 0.02);
+      --dock-bg: #ffffff;
+      --dock-border:#ece7fa;
+      --dock-ink-active: var(--accent-gray); 
+      --dock-ink-inactive: #8b8892;
+      --add-cash-bg: #ffffff;
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0; font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,'Apple Color Emoji','Segoe UI Emoji'; background:var(--app-bg); color:var(--text); -webkit-font-smoothing:antialiased}
+
+    /* ------------------------------------------------------------------- */
+    /* --- RESPONSIVE CORE LAYOUT & TYPOGRAPHY --- */
+    /* ------------------------------------------------------------------- */
+
+    /* Ensure app container is fluid on mobile, centered on desktop */
+    .app{
+        max-width:980px; 
+        margin:18px auto 96px; 
+        padding:0 16px; /* Added 16px horizontal padding for mobile safety */
+    }
+
+    /* Mobile adjustments for header */
+    header{
+        display:flex; 
+        align-items:center; 
+        justify-content:space-between; 
+        padding:2px 6px 14px;
+    }
+
+    /* Responsive typography for the main title */
+    header .h1{
+        font-size: clamp(28px, 8vw, 34px); /* Fluid scaling */
+        font-weight:800
+    }
+    
+    /* Responsive typography for the main balance amount */
+    .balance .amount{
+        /* Adjusted: Reduced minimum size to 30px and vw factor to 10vw 
+           to ensure large 9-digit numbers ($XXX,XXX,XXX.XX) fit on a single line on narrow mobile screens. */
+        font-size: clamp(30px, 10vw, 48px); 
+        font-weight:900; 
+        margin:6px 0; 
+        min-width: 0;
+        /* Ensure text does not break container on tiny screens */
+        overflow-wrap: break-word; 
+        word-break: break-word;
+    } 
+
+    .avatar{width:36px; height:36px; border-radius:50%; overflow:hidden; box-shadow:0 0 0 1px rgba(0,0,0,.1); border:none; background:#fff; cursor:pointer; padding:0}
+    .avatar img{width:100%; height:100%; object-fit:cover}
+
+    .card{background:var(--card); border-radius:24px; box-shadow:var(--shadow)}
+    .balance{padding:18px}
+    .balance .label{color:var(--muted); font-weight:700; letter-spacing:.2px}
+    .balance .meta{color:var(--muted); font-weight:700}
+    
+    /* Ensure buttons stay side-by-side but grow responsively */
+    .row{
+        display:flex; 
+        gap:12px; 
+        margin-top:14px;
+    }
+
+    /* General button styling */
+    .btn{
+        appearance:none; border:none; padding:16px 20px; 
+        border-radius:999px; cursor:pointer; flex:1;
+        font-size: 16px;
+        font-weight: 700; /* Unified font-weight */
+        min-width: 0; /* Prevent button overflow */
+    }
+    .btn:active{transform:translateY(1px)}
+
+    /* Specific Button Styles (Gray Theme - both buttons match) */
+    .btn-add, .btn-withdraw{
+        background:var(--btn-add-bg); 
+        color:var(--btn-add-text);
+    }
+    
+    .divider{height:1px; background:var(--border); margin:14px -18px}
+    /* FIX: Changed paychecks padding to match card padding visually (18px) */
+    .paychecks{
+      display:flex; 
+      align-items:center; 
+      justify-content:space-between; 
+      color:#9f9e9f; 
+      font-weight:800; 
+      /* Ensures content fits within the card's 18px padding */
+      padding:18px 0; 
+    }
+    .paychecks .muted{color:var(--muted); font-weight:700; text-align: right;}
+    .paychecks div:first-child{display:flex; align-items:center; gap:8px}
+
+    .section-title{font-weight:900; font-size:20px; margin:18px 8px}
+    .tile{display:flex; align-items:center; justify-content:space-between; padding:18px; border-radius:20px; background:#fff; box-shadow:var(--shadow)} 
+    .tile + .tile{margin-top:14px}
+    
+    .tile .left{
+        display:flex; 
+        align-items: center; /* Vertically align icon and text block */
+        gap: 16px; /* Space between icon and text */
+    }
+    
+    .ico-circle{
+        width:48px; height:48px; border-radius:50%; display:grid; place-items:center; 
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        flex-shrink: 0; /* Prevents icon from shrinking on small screens */
+        /* Set background to white/transparent for images to show properly */
+        background: white; 
+    }
+    /* Remove SVG specific styling as we are using images now */
+    .ico-circle img{width:100%; height:100%; object-fit:cover; border-radius: 50%;}
+    
+    .t-title{font-weight:700; font-size:18px}
+    .t-amount{font-weight:900; font-size:20px; margin-top:2px; margin-bottom:4px;} /* Reduced size for better fit */
+    .t-sub{color:var(--muted); font-weight:600; font-size:12px}
+    .tile-right{display:flex; align-items:center; gap:8px;}
+    .circlechev{width:36px; height:36px; border-radius:50%; display:grid; place-items:center; color:var(--muted); font-size:1.5em; font-weight:300; margin-left:10px; flex-shrink: 0;}
+
+    /* ------------------------------------------------------------------- */
+    /* --- DOCK (Bottom Navigation) STYLES --- */
+    /* ------------------------------------------------------------------- */
+    .dock{
+        position:fixed; 
+        left:0; 
+        right:0; 
+        bottom:0; 
+        background:var(--dock-bg); 
+        /* backdrop-filter:blur(12px); Removed for wider compatibility */
+        border-top:1px solid var(--dock-border);
+        /* Include safe-area for iPhone notch compatibility */
+        padding-bottom: env(safe-area-inset-bottom, 0); 
+    }
+    .dock .inner{
+        max-width:980px; 
+        margin:0 auto; 
+        padding:10px 18px; 
+        display:flex; 
+        align-items:center; 
+        justify-content:space-between
+    }
+    .dock .val{font-weight:800; font-size:18px; color:#1f1c26; letter-spacing:.2px; margin-left: 5px;}
+    .dock .icons{
+        display:flex; 
+        align-items:center; 
+        /* Reduced gap for mobile density */
+        gap: 24px; 
+    } 
+    .dock button{appearance:none; border:none; background:transparent; width:44px; height:44px; display:grid; place-items:center; border-radius:14px; cursor:pointer; color:var(--dock-ink-inactive); opacity:1; padding:0}
+    .dock button.active{color:var(--dock-ink-active);}
+    .dock button svg{width:24px; height:24px; stroke-width:2}
+
+    /* ------------------------------------------------------------------- */
+    /* --- ADD CASH BOTTOM SHEET STYLES (Mobile Optimized) --- */
+    /* ------------------------------------------------------------------- */
+    .slide-page {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: transparent;
+        z-index: 1000;
+        display: none; 
+        max-width: 980px;
+        margin: 0 auto;
+    }
+
+    .slide-page-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.4); 
+        opacity: 0;
+        transition: opacity 0.3s ease-out;
+    }
+
+    .slide-page-modal {
+        position: absolute;
+        bottom: 0; 
+        left: 0;
+        right: 0;
+        max-height: 90vh; /* Increased max height */
+        /* Use VH units for fluidity */
+        height: auto; 
+        overflow-y: auto; 
+        background: var(--add-cash-bg);
+        border-radius: 20px 20px 0 0; 
+        transform: translateY(100%); 
+        transition: transform 0.3s ease-out;
+        padding: 20px;
+        /* Padding for safe areas */
+        padding-bottom: calc(20px + env(safe-area-inset-bottom, 0));
+        display: flex;
+        flex-direction: column;
+    }
+
+    .slide-page.open {
+        display: block;
+    }
+    .slide-page.open .slide-page-overlay {
+        opacity: 1;
+    }
+    .slide-page.open .slide-page-modal {
+        transform: translateY(0);
+    }
+    
+    .slide-page-header {
+        position: relative;
+        text-align: center;
+        padding: 10px 0 30px;
+        flex-shrink: 0;
+    }
+
+    .slide-page-header button {
+        position: absolute;
+        left: 0;
+        top: 10px;
+        background: none;
+        border: none;
+        font-size: 24px;
+        cursor: pointer;
+        color: var(--muted);
+        padding: 0;
+    }
+    
+    .add-cash-amounts {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 16px;
+        max-width: 400px;
+        margin: 40px auto 20px;
+        flex-shrink: 0; 
+    }
+
+    .amount-btn {
+        background: var(--card);
+        border: 1px solid var(--border);
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+        border-radius: 12px;
+        padding: 15px 5px;
+        font-size: 18px;
+        font-weight: 700;
+        color: var(--text);
+        cursor: pointer;
+        transition: all 0.1s;
+    }
+    .amount-btn:hover {
+        background: #f8f8f8;
+    }
+    .amount-btn.active {
+        border-color: var(--accent-green);
+        box-shadow: 0 0 0 2px var(--accent-green);
+    }
+
+    /* New styles for the custom amount input */
+    .add-cash-custom-input {
+        max-width: 400px;
+        margin: 20px auto 40px;
+        display: none; /* Hidden by default */
+        text-align: center;
+        padding: 0 10px;
+    }
+
+    .add-cash-custom-input.visible {
+        display: block;
+    }
+
+    .add-cash-custom-input input {
+        width: 100%;
+        font-size: 32px;
+        font-weight: 900;
+        text-align: center;
+        border: none;
+        border-bottom: 2px solid var(--border);
+        padding: 10px 0;
+        color: var(--text);
+    }
+    /* Hide number input spinners */
+    .add-cash-custom-input input::-webkit-outer-spin-button,
+    .add-cash-custom-input input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    .add-cash-custom-input input[type=number] {
+        -moz-appearance: textfield;
+    }
+
+    .add-cash-footer {
+        padding-top: 20px;
+        flex-shrink: 0;
+    }
+
+    .add-cash-final-btn {
+        width: 100%;
+        background: var(--accent-green);
+        color: white;
+        font-weight: 800;
+        padding: 18px 20px;
+        border: none;
+        border-radius: 999px;
+        font-size: 18px;
+        cursor: pointer;
+        transition: background 0.2s;
+    }
+    .add-cash-final-btn:active {
+        transform: translateY(1px);
+    }
+            /* Page slide-in animation (bottom to top) */
+@keyframes slideIn {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+body {
+  animation: slideIn 0.5s ease both;
+}
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <div class="h1">Money</div>
+      <button class="avatar" id="avatarBtn" title="Change photo" aria-label="Change profile photo">
+        <img id="avatarImg" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACQAAAAkCAYAAADLPR1OAAAACXBIWXMAAA7DAAAOwwHHB6SqAAAAoElEQVRYhe2WsRGAIAhFUe+99x8jUEMfPjK2oE3r61kF90YgQO6wU0oRkkC7WzB3u8jY+z/f0w0iC/Y52zVqjG3q7R5F3V1219b106q7e8C5zQWc803kQh8hC/K6v+38/9n/9G3XgH/f8gI8w2xY8tH7r7N68i7XlG72s77G86h+Q6v4f8hT0s6/gA+B/jXm7gG7gXo2z9kL/g3i2W6r3r6gD2C5xTj9n7307zQO4N5Wv2AewXmP6L2P6j7X4K3kO+T4o/sC923gU9/mAAAAAASUVORK5CYII=" alt="Profile"/>
+      </button>
+      <input id="avatarPicker" type="file" accept="image/*" style="position:absolute;left:-9999px;width:1px;height:1px;opacity:0" />
+    </header>
+
+    <main class="grid" aria-live="polite">
+      <section class="card balance" aria-labelledby="bal">
+        <div class="label" id="bal">Cash balance</div>
+        <div class="amount" id="amt" data-value="987654321">$33,846.00</div> 
+        <div class="meta">Account••3020 &nbsp; Routing••261</div>
+        <div class="row">
+          <button class="btn btn-add" id="addBtn">Add money</button>
+          <button class="btn btn-withdraw" id="wdBtn">Withdraw</button>
+        </div>
+        <div class="divider"></div>
+        <div class="paychecks">
+          <div><svg viewBox="0 0 24 24" style="width:18px;height:18px;color:var(--accent-gray);stroke-width:2;" fill="none" stroke="currentColor"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><path d="m9 11 3 3L22 4"/></svg>Paychecks</div>
+          <div class="muted">Ready for first paycheck ▸</div>
+        </div>
+      </section>
+
+      <section>
+        <div class="section-title">Save &amp; invest</div>
+        <article class="tile">
+          <div class="left">
+            <div class="ico-circle">
+              <img src="dollar-logo-png-download-11659477611zp9mizikmo.png" alt="Savings Dollar Sign Icon" />
+            </div>
+            <div>
+              <div class="t-title">Savings</div>
+              <div class="t-amount">$120,000.00</div>
+              <div class="t-sub">Up to 4% interest</div>
+            </div>
+          </div>
+          <div class="tile-right">
+            <div class="circlechev">›</div>
+          </div>
+        </article>
+
+        <article class="tile">
+          <div class="left">
+            <div class="ico-circle">
+              <img src="Bitcoin.svg.png" alt="Bitcoin Logo Icon" />
+            </div>
+            <div>
+              <div class="t-title">Bitcoin</div>
+              <div class="t-amount">$20,000.00</div>
+              <div class="t-sub">1,000.00% today</div>
+            </div>
+          </div>
+          <div class="tile-right">
+            <div class="circlechev">›</div>
+          </div>
+        </article>
+
+        <article class="tile">
+          <div class="left">
+            <div class="ico-circle">
+              <img src="free-stocks-icon-svg-download-png-1100762.webp" alt="Stocks Chart Icon" />
+            </div>
+            <div>
+              <div class="t-title">Stocks</div>
+              <div class="t-amount">$90,000.00</div>
+              <div class="t-sub">5,000.00% today</div>
+            </div>
+          </div>
+          <div class="tile-right">
+            <div class="circlechev">›</div>
+          </div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <div class="dock" role="navigation" aria-label="Bottom">
+    <div class="inner">
+      <div class="val" id="miniVal">$987.6M</div>
+      <div class="icons">
+        <button title="Square"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="2" x2="22" y1="17" y2="17"/><line x1="6" x2="6" y1="21" y2="17"/><line x1="18" x2="18" y1="21" y2="17"/></svg></button>
+        <button class="active" id="dockDollarBtn" title="Dollar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg></button>
+        <button title="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg></button>
+        <button title="Clock" id="dockRecentBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></button>
+      </div>
+    </div>
+  </div>
+
+  <div id="addCashPage" class="slide-page">
+    <div class="slide-page-overlay"></div>
+    <div class="slide-page-modal">
+        <div class="content-wrapper">
+          <div class="slide-page-header">
+            <button id="closeAddCash" aria-label="Close">
+              <svg viewBox="0 0 24 24" width="24" height="24" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            </button>
+            <div style="font-size: 20px; font-weight: 800;">Add Cash</div>
+          </div>
+
+          <div class="add-cash-amounts">
+            <button class="amount-btn" data-amount="10">$10</button>
+            <button class="amount-btn" data-amount="25">$250</button>
+            <button class="amount-btn" data-amount="50">$5,000</button>
+            <button class="amount-btn" data-amount="100">$10,000</button>
+            <button class="amount-btn" data-amount="200">$500,000</button>
+            <button class="amount-btn" data-type="other">More</button>
+          </div>
+          
+          <div id="customAmountInput" class="add-cash-custom-input">
+            <label for="customAmount" class="label" style="display:block;margin-bottom:8px;">Enter Amount</label>
+            <input type="number" id="customAmount" inputmode="decimal" placeholder="0.00" value="" min="0.01" max="999999999" step="0.01" />
+          </div>
+          
+        </div>
+
+        <div class="add-cash-footer">
+          <button id="finalAddCashBtn" class="add-cash-final-btn">Add</button>
+        </div>
+    </div>
+  </div>
+
+  <script>
+    const amt = document.getElementById('amt');
+    const mini = document.getElementById('miniVal');
+    
+    // Elements for the new slide-up page
+    const addCashPage = document.getElementById('addCashPage');
+    const addBtn = document.getElementById('addBtn');
+    const closeAddCash = document.getElementById('closeAddCash');
+    const finalAddCashBtn = document.getElementById('finalAddCashBtn');
+    const amountButtons = document.querySelectorAll('.amount-btn');
+    // Elements for custom amount
+    const customAmountInputDiv = document.getElementById('customAmountInput');
+    const customAmountInput = document.getElementById('customAmount');
+
+    // Navigation Elements
+    const wdBtn = document.getElementById('wdBtn'); // Withdraw button
+    const dockDollarBtn = document.getElementById('dockDollarBtn'); // Footer dollar button
+    const dockRecentBtn = document.getElementById('dockRecentBtn'); // NEW: Footer clock button
+    
+    // Amount constants
+    const STARTING_BALANCE = 987654321.00; 
+    const STORAGE_KEY = 'moneyDemo.balance';
+
+    function getBalance(){
+      // Use local storage to persist the balance
+      return parseFloat(localStorage.getItem(STORAGE_KEY) || STARTING_BALANCE);
+    }
+
+    function setBalance(v){
+      localStorage.setItem(STORAGE_KEY, v.toFixed(2));
+      render();
+    }
+
+    function render(){
+      const bal = getBalance();
+      // Use toLocaleString for proper comma separation
+      amt.textContent = `$${bal.toLocaleString('en-US', {minimumFractionDigits:2})}`; 
+      // Enhanced mini-balance logic for large numbers
+      let miniText;
+      if (bal >= 1000000) {
+        miniText = `$${(bal / 1000000).toFixed(1)}M`;
+      } else if (bal >= 1000) {
+        miniText = `$${(bal / 1000).toFixed(1)}K`;
+      } else {
+        miniText = `$${bal.toFixed(0)}`;
+      }
+      mini.textContent = miniText;
+    }
+
+    // --- Slide-Up Page Functions ---
+    
+    function openAddCashPage() {
+      // Clear custom input and hide it on open
+      customAmountInput.value = '';
+      customAmountInputDiv.classList.remove('visible');
+      
+      document.body.style.overflow = 'hidden'; 
+      addCashPage.style.display = 'block';
+      setTimeout(() => {
+        addCashPage.classList.add('open');
+      }, 10); 
+    }
+
+    function closeAddCashPage() {
+      addCashPage.classList.remove('open');
+      document.body.style.overflow = '';
+      setTimeout(() => {
+        addCashPage.style.display = 'none';
+      }, 300); 
+      
+      amountButtons.forEach(btn => btn.classList.remove('active'));
+    }
+
+    // --- Event Listeners ---
+    
+    // 1. Open the slide-up page when 'Add money' is clicked
+    addBtn.addEventListener('click', openAddCashPage);
+
+    // 2. Close the slide-up page when 'X' is clicked or overlay is clicked
+    closeAddCash.addEventListener('click', closeAddCashPage);
+    document.querySelector('#addCashPage .slide-page-overlay').addEventListener('click', closeAddCashPage);
+
+    // 3. Handle amount selection (for visual feedback and custom input logic)
+    amountButtons.forEach(button => {
+        button.addEventListener('click', function() {
+            amountButtons.forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+
+            // Logic to show/hide the custom input
+            if (this.dataset.type === 'other') {
+                customAmountInputDiv.classList.add('visible');
+                // Focus the input to bring up the keyboard on mobile
+                customAmountInput.focus(); 
+            } else {
+                customAmountInputDiv.classList.remove('visible');
+                // Clear the custom input value when a preset is selected
+                customAmountInput.value = ''; 
+            }
+        });
+    });
+
+    // 4. Handle final 'Add' click (Updates balance)
+    finalAddCashBtn.addEventListener('click', () => {
+        let amountToAdd = 0;
+        const activeBtn = document.querySelector('.amount-btn.active');
+        
+        if (activeBtn) {
+            if (activeBtn.dataset.type === 'other') {
+                // Read from the custom input field
+                amountToAdd = parseFloat(customAmountInput.value) || 0;
+            } else {
+                // Read from the preset button's data-amount attribute
+                amountToAdd = parseFloat(activeBtn.dataset.amount) || 0;
+            }
+        }
+        
+        // Validation: Only proceed if amount is positive
+        if (amountToAdd > 0) {
+            const newBal = getBalance() + amountToAdd;
+            setBalance(newBal);
+            closeAddCashPage();
+        } else {
+            // Optional: Provide visual feedback that an amount is required
+            alert('Please select a valid amount to add.');
+        }
+    });
+
+    // 5. Navigate to index.html when 'Withdraw' is clicked 
+    wdBtn.addEventListener('click', () => {
+        window.location.href = 'index.html';
+    });
+    
+    // 6. Navigate to index.html when the footer dollar button is clicked 
+    dockDollarBtn.addEventListener('click', () => {
+        window.location.href = 'index.html';
+    });
+
+    // 7. Navigate to recent.html when the footer clock button is clicked (NEW)
+    dockRecentBtn.addEventListener('click', () => {
+        window.location.href = 'recent.html';
+    });
+
+
+    // Code for handling avatar image upload (unchanged)
+    (function(){
+      const btn = document.getElementById('avatarBtn');
+      const picker = document.getElementById('avatarPicker');
+      const img = document.getElementById('avatarImg');
+      const AVATAR_KEY = 'moneyDemo.avatar';
+      try{
+        const saved = localStorage.getItem(AVATAR_KEY);
+        if(saved){ img.src = saved; }
+      }catch(e){}
+      btn.addEventListener('click', ()=> picker.click());
+      picker.addEventListener('change', () => {
+        const file = picker.files && picker.files[0];
+        if(!file) return;
+        const reader = new FileReader();
+        reader.onload = e => { 
+          img.src = e.target.result; 
+          try{ localStorage.setItem(AVATAR_KEY, e.target.result); }catch(err){} 
+        };
+        reader.readAsDataURL(file);
+      });
+    })();
+
+    // Initial render
+    render();
+  </script>
+</body>
+</html>

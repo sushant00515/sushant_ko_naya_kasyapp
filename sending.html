@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+      <title>CashApp</title> <!-- UPDATED: Set title for PWA -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- PWA & Mobile Configuration -->
+    <link rel="manifest" href="manifest.json">
+    <!-- iOS PWA Meta Tags (Crucial for full-screen on iPhone) -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="Cash-App-Logo-PNG-File.png">
+    <meta name="theme-color" content="#00D54B">
+
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        'app-green': '#00d048', // Cash app green approximation
+                        'app-gray': '#f0f0f0',
+                        'dark-text': '#1f2937',
+                        'light-text': '#9ca3af',
+                        // A few colors for random avatars
+                        'rand-red': '#ef4444', 
+                        'rand-orange': '#f97316', 
+                        'rand-yellow': '#f59e0b', 
+                        'rand-green': '#10b981', 
+                        'rand-blue': '#3b82f6', 
+                        'rand-indigo': '#6366f1',
+                        'rand-purple': '#8b5cf6',
+                        'rand-pink': '#ec4899',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    keyframes: {
+                        pulse: {
+                            '0%, 100%': { opacity: '1' },
+                            '50%': { opacity: '.5' },
+                        }
+                    },
+                    animation: {
+                        pulse: 'pulse 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                    }
+                }
+            }
+        }
+    </script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f7f7f7;
+            display: flex;
+            justify-content: center;
+            min-height: 100vh; /* Ensure body takes full screen height */
+        }
+        /* Optimized for larger mobile screens like iPhone 14 Pro Max */
+        #app-container {
+            max-width: 430px; 
+            width: 100%;
+            background-color: white;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+            min-height: 100vh;
+            /* === NEW: Initial state for slide-up effect === */
+            transform: translateY(100%); /* Start off-screen below */
+            transition: transform 0.4s ease-out; /* Add transition */
+        }
+        /* === NEW: Final state for slide-up effect === */
+        #app-container.slide-in {
+            transform: translateY(0); /* Slide up to final position */
+        }
+
+        /* Custom Checkbox Styling: Square look */
+        .app-checkbox {
+            appearance: none;
+            width: 24px;
+            height: 24px;
+            border: 2px solid #ccc; 
+            border-radius: 6px; 
+            cursor: pointer;
+            position: relative;
+            transition: all 0.2s;
+            background-color: white; 
+            flex-shrink: 0; 
+        }
+
+        .app-checkbox:checked {
+            border-color: #00d048; 
+            background-color: #00d048; 
+        }
+
+        /* Custom SVG-style checkmark for the checked state */
+        .app-checkbox:checked::after {
+            content: '';
+            position: absolute;
+            left: 7px;
+            top: 3px;
+            width: 6px;
+            height: 12px;
+            border: solid white;
+            border-width: 0 3px 3px 0;
+            transform: rotate(45deg);
+        }
+
+        .input-text {
+            font-size: 1.125rem;
+            font-weight: 500;
+            line-height: 1.75rem;
+            color: #1f2937;
+        }
+
+        /* Modal specific styles */
+        #payment-modal {
+            transition: opacity 300ms ease-out;
+            pointer-events: none; /* Hidden by default */
+        }
+        #payment-modal.open {
+            opacity: 1;
+            pointer-events: auto; /* Active when open */
+        }
+        #modal-content {
+            transition: transform 300ms ease-out;
+            max-width: 430px; /* Match app container width */
+            margin: 0 auto; 
+        }
+        #payment-modal.open #modal-content {
+            transform: translateY(0);
+        }
+
+        /* NEW: Styles for the full-screen GIF display */
+        #gif-modal {
+            transition: opacity 0.5s ease-in-out; /* Transition for fade */
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <div id="app-container">
+
+        <header class="p-4 flex justify-between items-center border-b border-gray-100 sticky top-0 bg-white z-20 w-full">
+            <button onclick="handleCloseClick()" class="text-xl font-light text-dark-text p-2 rounded-full hover:bg-app-gray transition duration-150">
+                &times;
+            </button>
+            <h1 class="text-xl font-semibold text-dark-text" id="header-amount-display">$599</h1>
+            <button id="pay-button" onclick="handlePayClick()" class="px-4 py-2 bg-app-green text-white font-medium rounded-full opacity-50 cursor-not-allowed">
+                Pay
+            </button>
+        </header>
+
+        <main class="p-4 space-y-6 pb-20"> <div class="flex items-center space-x-3 pb-3 border-b border-gray-100">
+                <p class="text-lg text-dark-text font-medium w-12 flex-shrink-0">To</p>
+                <input type="text" id="to-input" placeholder="Name, $Cashtag, Phone, Email" class="input-text flex-grow placeholder-light-text focus:outline-none" aria-label="Recipient Input">
+            </div>
+
+            <div class="flex items-center space-x-3 pb-3 border-b border-gray-100">
+                <p class="text-lg text-dark-text font-medium w-12 flex-shrink-0">For</p>
+                <input type="text" id="note-input" placeholder="Note (required)" class="input-text flex-grow placeholder-light-text focus:outline-none" aria-label="Note Input">
+                <button onclick="showMessage('Extra features button clicked')" class="text-light-text hover:text-dark-text transition duration-150 flex-shrink-0">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" class="w-6 h-6">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                        <line x1="8" y1="17" x2="16" y2="17"></line>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="flex items-center justify-between pt-2 pb-4 cursor-pointer hover:bg-gray-50 rounded-lg p-2 -m-2 transition duration-150" onclick="openModal()">
+                <div class="flex items-center space-x-3">
+                    <div class="w-6 h-6 flex items-center justify-center rounded-full bg-app-green text-white font-bold text-sm flex-shrink-0">
+                        $
+                    </div>
+                    <span class="text-lg text-dark-text font-medium whitespace-nowrap">Cash balance: <span class="font-semibold" id="cash-balance-display">$0.00</span></span>
+                    </div>
+                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-light-text flex-shrink-0">
+                    <polyline points="6 9 12 15 18 9"></polyline>
+                </svg>
+            </div>
+
+            <h2 id="suggested-header" class="text-lg font-semibold text-dark-text mb-2 pt-2">Suggested</h2>
+
+            <div id="contacts-list" class="space-y-2">
+                </div>
+
+        </main>
+
+        <div id="message-box" class="fixed bottom-4 left-1/2 transform -translate-x-1/2 p-3 bg-gray-800 text-white rounded-lg shadow-xl opacity-0 transition-opacity duration-300 pointer-events-none z-30 w-11/12 max-w-xs text-center">
+            Action Performed!
+        </div>
+    </div>
+    
+    <div id="payment-modal" class="fixed inset-0 bg-black bg-opacity-50 z-30 flex justify-center items-end opacity-0">
+        <div id="modal-content" class="bg-white w-full h-1/2 rounded-t-2xl shadow-2xl p-6 transform translate-y-full">
+            <div class="flex justify-between items-center border-b pb-4 mb-4">
+                <h3 class="text-xl font-bold text-dark-text">Select Payment Source</h3>
+                <button onclick="closeModal()" class="text-2xl font-light text-dark-text p-1 rounded-full hover:bg-gray-100 transition duration-150">&times;</button>
+            </div>
+            
+            <p class="text-gray-600 mb-4">Choose which balance or card to use for this payment.</p>
+
+            <div class="space-y-3">
+                 <div class="p-3 bg-app-gray rounded-lg flex justify-between items-center ring-2 ring-app-green ring-offset-2">
+                    <div class="flex items-center space-x-2">
+                        <div class="w-5 h-5 flex items-center justify-center rounded-full bg-app-green text-white font-bold text-xs">$</div>
+                        <span class="font-semibold text-dark-text">Cash Balance</span>
+                    </div>
+                    <span class="font-bold text-dark-text" id="modal-balance-display">$0.00</span>
+                    </div>
+                 
+                 <div class="p-3 bg-white border border-gray-200 rounded-lg flex justify-between items-center hover:bg-gray-50 transition">
+                    <div class="flex items-center space-x-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="text-gray-400"><rect x="1" y="4" width="22" height="16" rx="2" ry="2"></rect><line x1="1" y1="10" x2="23" y2="10"></line></svg>
+                        <span class="text-dark-text">Visa •••• 1234</span>
+                    </div>
+                    <span class="text-sm text-light-text">Tap to select</span>
+                 </div>
+
+                 <button class="w-full text-center py-3 border border-dashed border-gray-300 rounded-lg text-light-text font-medium hover:bg-gray-50 transition">
+                     + Add Debit Card
+                 </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="gif-modal" class="fixed inset-0 bg-white z-40 flex flex-col items-center justify-center opacity-0 pointer-events-none">
+        <img src="Untitled design.gif" alt="Verification Animation" class="w-40 h-40">
+        <p id="gif-text" class="mt-8 text-xl font-semibold text-dark-text">Verifying...</p>
+    </div>
+    <script>
+        const colors = [
+            'bg-rand-red', 'bg-rand-orange', 'bg-rand-yellow', 'bg-rand-green', 
+            'bg-rand-blue', 'bg-rand-indigo', 'bg-rand-purple', 'bg-rand-pink'
+        ];
+        
+        const contactsData = [
+            { name: "sinz Vaesau", cashtag: "$sinavvs" }, 
+            { name: "Mariah H", cashtag: "$RiahhBabyy" },
+            { name: "Sarah Lee", cashtag: "$Famlee885" },
+            { name: "Marisa Perez", cashtag: "$mrisa08" },
+            { name: "Qwuaneil", cashtag: "$s3rvex1n" },
+            { name: "Darien Levario", cashtag: "$darienr6" },
+            { name: "Jane Doe", cashtag: "$JDoe123" },
+            { name: "Kyle Brown", cashtag: "$KBrown80" },
+            { name: "Alice Smith", cashtag: "$ASmithCo" },
+            { name: "Robert Jones", cashtag: "$RJonesPay" },
+        ];
+
+        const contactsList = document.getElementById('contacts-list');
+        const messageBox = document.getElementById('message-box');
+        const payButton = document.getElementById('pay-button');
+        const toInput = document.getElementById('to-input'); 
+        const noteInput = document.getElementById('note-input'); 
+        const suggestedHeader = document.getElementById('suggested-header');
+        const paymentModal = document.getElementById('payment-modal');
+        const headerAmountDisplay = document.getElementById('header-amount-display'); 
+        const appContainer = document.getElementById('app-container'); 
+        const gifModal = document.getElementById('gif-modal'); 
+        
+        // START OF CHANGE: New elements for dynamic balance display
+        const cashBalanceDisplay = document.getElementById('cash-balance-display');
+        const modalBalanceDisplay = document.getElementById('modal-balance-display');
+        // END OF CHANGE
+
+        let selectedRecipientName = ''; 
+        let searchTimeout;
+
+        // --- NEW FUNCTION: Retrieve and format the actual cash balance ---
+        function getDashboardBalance() {
+            // Using the key defined in dashboard.html
+            const STORAGE_KEY = 'moneyDemo.balance'; 
+            const STARTING_BALANCE = 987654321.00; // Fallback from dashboard.html
+            const bal = parseFloat(localStorage.getItem(STORAGE_KEY) || STARTING_BALANCE);
+            // Format the number to currency string
+            return `$${bal.toLocaleString('en-US', {minimumFractionDigits:2})}`;
+        }
+        // --- END NEW FUNCTION ---
+        
+        // --- NEW: Function to close the screen and return to index.html with slide-down effect ---
+        function handleCloseClick() {
+            // Apply the reverse slide-down animation
+            appContainer.style.transform = 'translateY(100%)';
+            
+            // Navigate back after the animation duration (400ms)
+            setTimeout(() => {
+                // Assuming 'index.html' is the main screen
+                window.location.href = 'index.html'; 
+            }, 400); 
+        }
+
+
+        // --- Modal Control Functions ---
+        function openModal() {
+            paymentModal.classList.add('open');
+        }
+
+        function closeModal() {
+            paymentModal.classList.remove('open');
+        }
+
+        // Add event listener to close modal if background is clicked
+        paymentModal.addEventListener('click', (e) => {
+            if (e.target === paymentModal) {
+                closeModal();
+            }
+        });
+        // --- End Modal Control Functions ---
+
+
+        /**
+         * Returns a random Tailwind color class for avatars.
+         */
+        function getRandomColor() {
+            return colors[Math.floor(Math.random() * colors.length)];
+        }
+
+        /**
+         * Returns the first letter of the contact's name.
+         */
+        function getInitial(name) {
+            return name.trim().charAt(0).toUpperCase();
+        }
+
+        /**
+         * Generates the HTML for a single contact item, randomly choosing avatar style.
+         * @param {Object} contact
+         * @returns {string} HTML string
+         */
+        function createContactElement(contact) {
+            const color = getRandomColor();
+            const initial = getInitial(contact.name);
+            let avatarContent;
+            
+            // 50/50 chance for either avatar style
+            const useInitialAvatar = Math.random() < 0.5; 
+
+            if (useInitialAvatar) {
+                // Option A: Use First Letter Avatar (Colored circle with initial)
+                avatarContent = `<span class="text-lg font-semibold">${initial}</span>`;
+            } else {
+                // Option B: Use Generic Profile Icon (SVG human silhouette)
+                avatarContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6 text-white">
+                                    <path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.023 18.023 0 0 1 12 21.75c-2.305 0-4.47-.611-6.438-1.643a.75.75 0 0 1-.437-.695Z" clip-rule="evenodd" />
+                                 </svg>`;
+            }
+            
+            const avatarHtml = `
+                <div class="w-10 h-10 ${color} rounded-full flex items-center justify-center text-white flex-shrink-0">
+                    ${avatarContent}
+                </div>
+            `;
+
+            // Generate a unique ID for the checkbox based on the cashtag
+            const checkboxId = `contact-${contact.cashtag.substring(1)}`;
+
+            return `
+                <label for="${checkboxId}" class="flex items-center justify-between p-2 rounded-xl hover:bg-gray-50 transition duration-150 cursor-pointer">
+                    <div class="flex items-center space-x-3 min-w-0 flex-grow">
+                        ${avatarHtml}
+                        <div class="min-w-0">
+                            <p class="text-base font-medium text-dark-text truncate">${contact.name}</p>
+                            <p class="text-sm text-light-text truncate">${contact.cashtag}</p>
+                        </div>
+                    </div>
+                    <input type="checkbox" id="${checkboxId}" name="contact-select" class="app-checkbox" 
+                           onchange="handleContactSelect(event, '${contact.name.replace(/'/g, "\\'")}', '${contact.cashtag.replace(/'/g, "\\'")}')"
+                           data-recipient-name="${contact.name.replace(/'/g, "\\'")}"
+                           data-recipient-cashtag="${contact.cashtag.replace(/'/g, "\\'")}">
+                </label>
+            `;
+        }
+
+        /**
+         * Generates the HTML for the top search result, styled exactly like a contact.
+         * @param {string} searchText
+         * @returns {string} HTML string
+         */
+        function createSearchResultElement(searchText) {
+            const name = searchText;
+            // Simplified Cashtag logic for demonstration: use a fixed cashtag structure for the search result
+            const cashtag = '$' + searchText.trim().replace(/[^a-zA-Z0-9]/g, '').toLowerCase().substring(0, 10); 
+            // Fallback cashtag for empty string, though this function shouldn't be called with empty.
+            const finalCashtag = cashtag || '$unknown'; 
+
+            const color = getRandomColor();
+            const initial = getInitial(searchText);
+
+            // Always use initial for the search result to match the input text
+            const avatarHtml = `
+                <div class="w-10 h-10 ${color} rounded-full flex items-center justify-center text-white font-semibold text-lg flex-shrink-0">
+                    <span class="text-lg font-semibold">${initial}</span>
+                </div>
+            `;
+
+            // Use a specific ID for the search result checkbox
+            const checkboxId = `contact-search-result`;
+
+            return `
+                <label for="${checkboxId}" class="flex items-center justify-between p-2 rounded-xl hover:bg-gray-50 transition duration-150 cursor-pointer mb-2">
+                    <div class="flex items-center space-x-3 min-w-0 flex-grow">
+                        ${avatarHtml}
+                        <div class="min-w-0">
+                            <p class="text-base font-medium text-dark-text truncate">${name}</p>
+                            <p class="text-sm text-light-text truncate">${finalCashtag}</p>
+                        </div>
+                    </div>
+                    <input type="checkbox" id="${checkboxId}" name="contact-select" class="app-checkbox" 
+                           onchange="handleContactSelect(event, '${name.replace(/'/g, "\\'")}', '${finalCashtag.replace(/'/g, "\\'")}')"
+                           data-recipient-name="${name.replace(/'/g, "\\'")}"
+                           data-recipient-cashtag="${finalCashtag.replace(/'/g, "\\'")}">
+                </label>
+            `;
+        }
+
+
+        /**
+         * Renders suggested contacts, optionally filtering them, ensuring state is preserved.
+         * @param {string} filterText
+         */
+        function renderSuggestedContacts(filterText = '') {
+            const filteredContacts = contactsData.filter(contact =>
+                contact.name.toLowerCase().includes(filterText.toLowerCase()) ||
+                contact.cashtag.toLowerCase().includes(filterText.toLowerCase())
+            );
+
+            // Render new contact elements with fresh random icons
+            contactsList.innerHTML = filteredContacts.map(createContactElement).join('');
+            
+            // Re-apply the selection based on the 'To' input value (if any selection was made before search)
+            const currentRecipient = toInput.value.trim();
+            if (currentRecipient) {
+                // Find the checkbox that corresponds to the current 'To' input value
+                const targetCheckbox = document.querySelector(`#contacts-list input[type="checkbox"][data-recipient-cashtag*="${currentRecipient.toLowerCase().replace('$', '')}"]`);
+                if (targetCheckbox) {
+                    targetCheckbox.checked = true;
+                }
+            }
+
+            // Ensure pay button state is correctly updated after render
+            updatePayButtonState();
+        }
+
+        /**
+         * Renders the search result (the name in the 'To' field) at the top,
+         * followed by the filtered list.
+         * @param {string} searchText
+         */
+        function renderSearchContact(searchText) {
+            const filterText = searchText.trim();
+
+            if (filterText === '') {
+                renderSuggestedContacts('');
+                return;
+            }
+
+            // 1. Generate the top search result 
+            const searchResultHtml = createSearchResultElement(filterText);
+            
+            // 2. Filter suggested contacts below the search result
+            const filteredContacts = contactsData.filter(contact =>
+                contact.name.toLowerCase().includes(filterText.toLowerCase()) ||
+                contact.cashtag.toLowerCase().includes(filterText.toLowerCase())
+            );
+
+            // Render the top result followed by the filtered list
+            contactsList.innerHTML = searchResultHtml + filteredContacts.map(createContactElement).join('');
+            
+            // Ensure pay button state is correctly updated after render
+            updatePayButtonState();
+        }
+
+
+        /**
+         * Handles input change in the 'To' field.
+         * @param {Event} event 
+         */
+        function handleSearchInput(event) {
+            clearTimeout(searchTimeout);
+            const searchText = event.target.value;
+            
+            // Clear existing selection state
+            selectedRecipientName = '';
+            Array.from(document.querySelectorAll('.app-checkbox')).forEach(cb => cb.checked = false);
+            
+            updatePayButtonState();
+
+            if (searchText.trim() === '') {
+                renderSuggestedContacts('');
+                suggestedHeader.textContent = 'Suggested';
+                return;
+            }
+
+            suggestedHeader.textContent = 'Results';
+            
+            // Render the search result and filtered list
+            searchTimeout = setTimeout(() => {
+                renderSearchContact(searchText);
+            }, 100); 
+        }
+
+        /**
+         * Toggles the active state of the 'Pay' button based on selection.
+         */
+        function updatePayButtonState() {
+            // Button requires a checkbox selection AND the note field must not be empty
+            const anySelected = Array.from(document.querySelectorAll('.app-checkbox')).some(cb => cb.checked);
+            const hasNote = noteInput.value.trim() !== '';
+
+            if (anySelected && hasNote) {
+                // Activate button
+                payButton.classList.remove('opacity-50', 'cursor-not-allowed');
+                payButton.classList.add('opacity-100', 'cursor-pointer', 'shadow-md');
+            } else {
+                // Deactivate button
+                payButton.classList.remove('opacity-100', 'cursor-pointer', 'shadow-md');
+                payButton.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        }
+        
+        /**
+         * Handles the click on the Pay button, now showing the GIF for 5 seconds.
+         */
+        function handlePayClick() {
+            if (payButton.classList.contains('opacity-100')) {
+                const amount = headerAmountDisplay.textContent;
+                const recipient = selectedRecipientName || toInput.value.trim();
+
+                // 1. Show the GIF Modal (Fade-in)
+                gifModal.classList.remove('opacity-0', 'pointer-events-none');
+                gifModal.classList.add('opacity-100');
+
+                // 2. Set a timeout for the 5-second display (5000ms)
+                setTimeout(() => {
+                    // 3. Hide the GIF Modal (Fade-out)
+                    gifModal.classList.remove('opacity-100');
+                    gifModal.classList.add('opacity-0');
+                    
+                    // Wait for the fade-out transition (500ms) before redirecting
+                    setTimeout(() => {
+                        // 4. Save data and redirect to success.html
+                        sessionStorage.setItem('paymentAmount', amount);
+                        sessionStorage.setItem('recipientName', recipient);
+                        window.location.href = 'success.html';
+                    }, 500); // Wait 500ms for the transition
+
+                }, 5000); // Total display time of the GIF is 5 seconds
+            }
+        }
+
+        /**
+         * Handles the custom message box display.
+         * @param {string} message 
+         */
+        function showMessage(message) {
+            messageBox.textContent = message;
+            messageBox.classList.remove('opacity-0', 'pointer-events-none');
+            messageBox.classList.add('opacity-100');
+
+            setTimeout(() => {
+                messageBox.classList.remove('opacity-100');
+                messageBox.classList.add('opacity-0', 'pointer-events-none');
+            }, 2000);
+        }
+
+        /**
+         * Handles the checkbox state change, populates the fields, and updates the Pay button.
+         * @param {Event} event 
+         * @param {string} name 
+         * @param {string} cashtag 
+         */
+        function handleContactSelect(event, name, cashtag) {
+            if (event.target.checked) {
+                // Uncheck all other boxes to enforce single selection 
+                Array.from(document.querySelectorAll('.app-checkbox')).forEach(cb => {
+                    if (cb !== event.target) {
+                        cb.checked = false;
+                    }
+                });
+                
+                // Populate fields
+                toInput.value = cashtag; // Fill the 'To' field with the Cashtag or Name
+                selectedRecipientName = name; // Store the full name for the success screen
+                
+                // Only pre-fill note if it's currently empty, otherwise leave user's input
+                if (noteInput.value.trim() === '') {
+                    noteInput.value = `Payment for ${name}`; 
+                }
+            } else {
+                // Only clear fields if the item being unchecked is the one currently in the To input
+                if (toInput.value === cashtag) {
+                    noteInput.value = ''; // Clear the Note field
+                    toInput.value = ''; // Clear the 'To' field
+                    selectedRecipientName = ''; // Clear the stored name
+                }
+            }
+            updatePayButtonState(); // Update button state
+        }
+        
+        // --- Initialization function for the sending screen ---
+        function initializeSendingScreen() {
+             // 1. Get the amount to send from localStorage
+            const amount = localStorage.getItem('cashAppAmount') || '$0';
+            
+            // 2. Update the header display
+            headerAmountDisplay.textContent = amount;
+            
+            // 3. START OF CHANGE: Dynamically set the Cash Balance
+            const balanceText = getDashboardBalance();
+            cashBalanceDisplay.textContent = balanceText;
+            modalBalanceDisplay.textContent = balanceText;
+            // 3. END OF CHANGE
+            
+            // 4. Trigger the slide-in animation
+            // Use setTimeout to ensure the browser registers the initial translateY(100%) state
+            setTimeout(() => {
+                appContainer.classList.add('slide-in');
+            }, 10); 
+            
+            // 5. Initialize contacts and event listeners
+            renderSuggestedContacts(''); 
+            updatePayButtonState(); 
+            toInput.addEventListener('input', handleSearchInput);
+            noteInput.addEventListener('input', updatePayButtonState);
+        }
+
+        // --- Initialization ---
+        window.onload = initializeSendingScreen;
+        
+
+    </script>
+</body>
+</html>

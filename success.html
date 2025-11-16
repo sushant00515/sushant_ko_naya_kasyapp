@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+       <title>CashApp</title> <!-- UPDATED: Set title for PWA -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- PWA & Mobile Configuration -->
+    <link rel="manifest" href="manifest.json">
+    <!-- iOS PWA Meta Tags (Crucial for full-screen on iPhone) -->
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <link rel="apple-touch-icon" href="Cash-App-Logo-PNG-File.png">
+    <meta name="theme-color" content="#00D54B">
+
+    <style>
+        /* Set the body font and ensure it fills the viewport */
+        body {
+            font-family: "Inter", sans-serif;
+            background-color: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            /* Added overflow-hidden to body to help prevent bounce/scroll on mobile */
+            overflow: hidden; 
+        }
+
+        /* Container to mimic a mobile screen for visual effect */
+        .mobile-frame {
+            background-color: #ffffff;
+            width: 100%;
+            max-width: 400px; /* Typical phone width */
+            /* Ensure 100% viewport height for edge-to-edge mobile fit */
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            /* Increased border-radius for modern mobile app look */
+            border-radius: 2rem; 
+            /* REMOVED: box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.1); */
+            position: relative; 
+            overflow: hidden;
+        }
+
+        /* Ensure content is left-aligned and starts near the top */
+        .content-area {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            /* Align content to the top */
+            justify-content: flex-start; 
+            /* Left align content blocks (this is important for stacking) */
+            align-items: flex-start; 
+            /* Padding to clear the absolute X button and add side space */
+            padding: 5rem 1.5rem 5rem 1.5rem; 
+        }
+
+        /* Custom green color based on the provided image (vibrant, soft green) */
+        .app-green {
+            background-color: #6AD94A; /* Custom vibrant green */
+            transition: background-color 0.15s ease-in-out;
+            /* CRUCIAL UPDATE: Set border-radius very high (e.g., 9999px) for a true pill shape */
+            border-radius: 9999px !important; 
+        }
+        .app-green:hover {
+            background-color: #55c434;
+        }
+        
+        /* New style for the bottom container to ensure it hugs the bottom edge with margin */
+        .bottom-fixed-area {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            /* Adjusted padding to be tighter on sides and bottom to match the mobile aesthetic */
+            padding: 0 1rem 0.75rem 1rem; /* Reduced bottom padding for a tighter fit */
+        }
+
+        /* Page slide-in animation (bottom to top) */
+        @keyframes slideIn {
+            from {
+                transform: translateY(100%);
+                opacity: 0;
+            }
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        body {
+            animation: slideIn 0.5s ease both;
+        }
+    </style>
+</head>
+<body>
+
+<div class="mobile-frame">
+
+    <div class="absolute top-0 left-0 p-4 z-10">
+        <button id="close-btn" class="text-gray-900 hover:text-gray-700 p-2 focus:outline-none">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor" class="w-6 h-6">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+    </div>
+
+    <div class="content-area">
+        
+        <div class="mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" class="w-16 h-16 flex-shrink-0">
+                <circle cx="12" cy="12" r="11" fill="#6AD94A" /> 
+                <path fill="none" stroke="#ffffff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" d="M7 12L10.5 15.5L17.5 8.5" />
+            </svg>
+        </div>
+        
+        <h1 id="success-message" class="text-2xl font-semibold text-gray-900 mb-8">
+            You sent $500 to Jada
+        </h1>
+
+        <div id="hidden-card" class="hidden w-full bg-transparent p-4">
+            <h3 class="text-lg font-medium text-gray-900 mb-2">Transaction Details</h3>
+            <ul class="text-sm text-gray-600 space-y-1">
+                <li class="flex justify-between">
+                    <span>Recipient:</span>
+                    <span id="detail-recipient" class="font-semibold text-gray-800">Jada Smith</span>
+                </li>
+                <li class="flex justify-between">
+                    <span>Amount:</span>
+                    <span id="detail-amount" class="font-semibold text-gray-800">$500.00</span>
+                </li>
+                <li class="flex justify-between">
+                    <span>Date:</span>
+                    <span class="font-semibold text-gray-800">Nov 16, 2025</span>
+                </li>
+                <li class="flex justify-between">
+                    <span>Ref ID:</span>
+                    <span class="font-semibold text-gray-800">#ABC-123-XYZ</span>
+                </li>
+            </ul>
+            <p class="text-xs text-gray-400 mt-4 text-center">Tap 'Done' to finish.</p>
+        </div>
+        
+    </div>
+
+    <div class="bottom-fixed-area">
+        <button id="done-btn" class="w-full py-4 text-lg text-white font-medium app-green focus:outline-none active:bg-green-600">
+            Done
+        </button>
+    </div>
+
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const doneButton = document.getElementById('done-btn');
+        const closeButton = document.getElementById('close-btn');
+        
+        const successMessage = document.getElementById('success-message');
+        const detailRecipient = document.getElementById('detail-recipient');
+        const detailAmount = document.getElementById('detail-amount');
+        
+        const amountStr = sessionStorage.getItem('paymentAmount') || '$0.00';
+        const amount = parseFloat(amountStr.replace(/[^0-9.]/g, '')) || 0; 
+        const recipient = sessionStorage.getItem('recipientName') || 'a recipient'; 
+        const initial = recipient.charAt(0).toUpperCase();
+
+        successMessage.textContent = `You sent ${amountStr} to ${recipient}`;
+        detailAmount.textContent = amountStr;
+        detailRecipient.textContent = recipient;
+        
+        const BALANCE_KEY = 'moneyDemo.balance';
+        const HISTORY_KEY = 'moneyDemo.history';
+
+        const handleAction = (action) => {
+            console.log(`Action: ${action} triggered.`);
+            
+            if (action === 'Done') {
+                // 1. Update Balance
+                const currentBalanceStr = localStorage.getItem(BALANCE_KEY);
+                const STARTING_BALANCE = 987654321.00; 
+                let currentBalance = parseFloat(currentBalanceStr || STARTING_BALANCE); 
+                const newBalance = currentBalance - amount;
+                localStorage.setItem(BALANCE_KEY, newBalance.toFixed(2));
+                
+                // 2. Add New Transaction to History
+                const newTransaction = {
+                    name: recipient,
+                    detail: "Mobile payment sent.",
+                    amount: amount, 
+                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+                    initial: initial,
+                    color: "bg-red-500" 
+                };
+                
+                const historyStr = localStorage.getItem(HISTORY_KEY);
+                let history = historyStr ? JSON.parse(historyStr) : [];
+
+                history.unshift(newTransaction);
+                history = history.slice(0, 16); 
+
+                localStorage.setItem(HISTORY_KEY, JSON.stringify(history));
+
+                console.log(`Deducted ${amountStr}. New balance: $${newBalance.toFixed(2)}. Transaction recorded.`);
+
+                // *** FIX: Redirects to dashboard.html as requested ***
+                window.location.href = 'dashboard.html'; 
+            }
+        };
+
+        doneButton.addEventListener('click', () => handleAction('Done'));
+        closeButton.addEventListener('click', () => handleAction('Close'));
+
+        sessionStorage.removeItem('paymentAmount');
+        sessionStorage.removeItem('recipientName');
+    });
+</script>
+</body>
+</html>
